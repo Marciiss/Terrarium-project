@@ -175,7 +175,7 @@
     <br>
     <div>A táska teljesen szabad: bármit bárhova rakhatsz. A gyorstár (1-9, 0) tetején lévő táska panelben <b>kattints egy tárgyra, majd egy másik helyre</b> — így cseréled meg őket. Amit épp kiválasztottál a gyorstárban, azzal bányászol / harcolsz / raksz le — csákányt, fejszét vagy kardot csak akkor használsz, ha azt tartod a kezedben!</div>
     <br>
-    <div>Fejlődj: fa → réz → vas → arany szerszámok kovácsolásával. Építs munkapadot és kemencét! Vigyázz a lávával, és éjjel/mélyben a szörnyekkel. Gyűjts nyálka-zselét egy Nyálka Kürt elkészítéséhez, és idézd meg a Nyálka Királyt!</div>
+    <div>Fejlődj: fa → réz → vas → arany szerszámok kovácsolásával. Építs munkapadot és kemencét! Kovácsolj páncélt is a védelemért (szereld fel a táska "Páncél" részében). Vigyázz a lávával, és éjjel/mélyben a szörnyekkel. Gyűjts nyálka-zselét egy Nyálka Kürt elkészítéséhez, és idézd meg a Nyálka Királyt — majd a mélyebb rétegekben egy Gyanús Szem segítségével az Éjszemet is! Fedezd fel a dzsungelt, a vörös-fennsíkot és a mélyben lapuló obszidián-réteget. Ajtót is nyithatsz/zárhatsz jobb klikkel.</div>
     <div class="close">Kattints bárhova a kezdéshez</div>
   </div>
 
@@ -191,6 +191,8 @@
         <div class="col">
           <h2 style="margin:0 0 4px 0;">⚡ Gyorstár (1-9, 0)</h2>
           <div id="hotbarGrid" class="grid" style="margin-bottom:14px;"></div>
+          <h2 style="margin:0 0 4px 0;">🛡 Páncél <span id="defenseLabel" style="font-size:11px;opacity:.75;"></span></h2>
+          <div id="equipGrid" class="grid" style="margin-bottom:14px;"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <h2 style="margin:0;">🎒 Hátizsák</h2>
             <button id="sortBtn" style="background:var(--slot);border:1px solid var(--accent);color:var(--text);border-radius:5px;padding:4px 9px;cursor:pointer;font-size:11px;">Rendezés: Kategória</button>
@@ -202,7 +204,7 @@
           <div id="craftList" class="recipeList"></div>
         </div>
       </div>
-      <div class="modalHint">Kattints egy tárgyra, majd egy másik helyre — így cseréled/rendezed a táskát. I vagy Esc — bezárás</div>
+      <div class="modalHint">Kattints egy tárgyra, majd egy másik helyre — így cseréled/rendezed a táskát, így szereled fel a páncélt is. I vagy Esc — bezárás</div>
     </div>
   </div>
 
@@ -252,13 +254,18 @@ function noise2D(x, y) {
 /* ============================================================ TILE & ITEM IDS */
 const AIR=0, GRASS=1, DIRT=2, STONE=3, WOOD=4, LEAVES=5, COPPER_ORE=6, IRON_ORE=7, GOLD_ORE=8,
       TORCH=9, PLANK=10, SAND=11, BEDROCK=12, SANDSTONE=13, CACTUS=14, SNOWBLOCK=15, ICE=16,
-      CAVERN_STONE=17, AMETHYST_ORE=18, LAVA=19, WATER=20, CHEST=21, CRAFTING_TABLE=22, FURNACE=23;
+      CAVERN_STONE=17, AMETHYST_ORE=18, LAVA=19, WATER=20, CHEST=21, CRAFTING_TABLE=22, FURNACE=23,
+      MUD=24, JUNGLE_GRASS=25, TERRACOTTA=26, OBSIDIAN=27, ASH=28, DOOR=29, MUSHROOM=30, VINE=31;
 
 const WOOD_PICKAXE=100, COPPER_PICKAXE=101, IRON_PICKAXE=102, GOLD_PICKAXE=103,
       WOOD_AXE=104, COPPER_AXE=105, IRON_AXE=106, GOLD_AXE=107,
       WOOD_SWORD=108, COPPER_SWORD=109, IRON_SWORD=110, GOLD_SWORD=111,
       COPPER_BAR=112, IRON_BAR=113, GOLD_BAR=114,
-      SLIME_GEL=115, SLIME_HORN=116, AMETHYST=117, BONE=118, SLIME_CROWN=119;
+      SLIME_GEL=115, SLIME_HORN=116, AMETHYST=117, BONE=118, SLIME_CROWN=119,
+      COPPER_HELMET=120, COPPER_CHEST=121, COPPER_LEGS=122,
+      IRON_HELMET=123, IRON_CHEST=124, IRON_LEGS=125,
+      GOLD_HELMET=126, GOLD_CHEST=127, GOLD_LEGS=128,
+      HEALTH_POTION=129, SUSPICIOUS_EYE=130, NIGHT_CRYSTAL=131, NIGHTBLADE=132;
 
 const TILES = {
   [AIR]:    {name:'Levegő', color:null, solid:false},
@@ -285,6 +292,14 @@ const TILES = {
   [CHEST]:  {name:'Láda', color:'#8a5a2b', solid:true, drop:CHEST},
   [CRAFTING_TABLE]: {name:'Munkapad', color:'#6b4226', solid:true, drop:CRAFTING_TABLE},
   [FURNACE]: {name:'Kemence', color:'#3a3a3a', solid:true, drop:FURNACE},
+  [MUD]: {name:'Mocsárföld', color:'#5a4230', solid:true, drop:MUD},
+  [JUNGLE_GRASS]: {name:'Dzsungelfű', color:'#2f9e3f', top:'#249e2a', solid:true, drop:MUD},
+  [TERRACOTTA]: {name:'Terrakotta', color:'#b5502f', solid:true, drop:TERRACOTTA},
+  [OBSIDIAN]: {name:'Obszidián', color:'#241a33', solid:true, drop:OBSIDIAN},
+  [ASH]: {name:'Hamu', color:'#726a6e', solid:true, drop:ASH},
+  [DOOR]: {name:'Ajtó', color:'#8a5a2b', solid:true, drop:DOOR},
+  [MUSHROOM]: {name:'Vörös gomba', color:'#d43e3e', solid:false, drop:MUSHROOM},
+  [VINE]: {name:'Inda', color:'#2f9e3f', solid:false, drop:null},
 };
 const ITEMS = {
   [WOOD_PICKAXE]:{name:'Fa csákány',color:'#a9713f'},
@@ -307,27 +322,54 @@ const ITEMS = {
   [AMETHYST]:{name:'Ametiszt',color:'#b070e6'},
   [BONE]:{name:'Csont',color:'#e8e0c8'},
   [SLIME_CROWN]:{name:'Nyálka korona',color:'#ffd85e'},
+  [COPPER_HELMET]:{name:'Réz sisak',color:'#c97a3d'},
+  [COPPER_CHEST]:{name:'Réz mellvért',color:'#c97a3d'},
+  [COPPER_LEGS]:{name:'Réz lábvért',color:'#c97a3d'},
+  [IRON_HELMET]:{name:'Vas sisak',color:'#c9beae'},
+  [IRON_CHEST]:{name:'Vas mellvért',color:'#c9beae'},
+  [IRON_LEGS]:{name:'Vas lábvért',color:'#c9beae'},
+  [GOLD_HELMET]:{name:'Arany sisak',color:'#f2c94c'},
+  [GOLD_CHEST]:{name:'Arany mellvért',color:'#f2c94c'},
+  [GOLD_LEGS]:{name:'Arany lábvért',color:'#f2c94c'},
+  [HEALTH_POTION]:{name:'Gyógyitóital',color:'#e34ba0'},
+  [SUSPICIOUS_EYE]:{name:'Gyanús szem',color:'#e8dede'},
+  [NIGHT_CRYSTAL]:{name:'Éjkristály',color:'#7a5ce0'},
+  [NIGHTBLADE]:{name:'Éjpenge',color:'#7a5ce0'},
 };
 function getDef(id){ return TILES[id] || ITEMS[id]; }
-function isSolid(id){ return id!=null && TILES[id] && TILES[id].solid; }
+const doorOpen = new Set();
+function isSolid(id, tx, ty){
+  if (id==null || !TILES[id]) return false;
+  if (id===DOOR && tx!=null && doorOpen.has(tx+','+ty)) return false;
+  return !!TILES[id].solid;
+}
 
 const TILE_REQ = {
   [GRASS]:0,[DIRT]:0,[SAND]:0,[SNOWBLOCK]:0,[WOOD]:0,[LEAVES]:0,[CACTUS]:0,[SANDSTONE]:0,[ICE]:0,[PLANK]:0,
   [STONE]:1,[CAVERN_STONE]:1,[COPPER_ORE]:1,[IRON_ORE]:2,[GOLD_ORE]:3,[AMETHYST_ORE]:3,
   [CHEST]:0,[CRAFTING_TABLE]:0,[FURNACE]:0,[TORCH]:0,
+  [MUD]:0,[JUNGLE_GRASS]:0,[TERRACOTTA]:0,[OBSIDIAN]:2,[ASH]:0,[DOOR]:0,[MUSHROOM]:0,[VINE]:0,
 };
 const TILE_HARD = {
   [GRASS]:0.35,[DIRT]:0.35,[SAND]:0.3,[SNOWBLOCK]:0.35,[WOOD]:0.5,[LEAVES]:0.15,[CACTUS]:0.3,[SANDSTONE]:0.45,[ICE]:0.3,[PLANK]:0.35,
   [STONE]:0.75,[CAVERN_STONE]:0.9,[COPPER_ORE]:0.9,[IRON_ORE]:1.2,[GOLD_ORE]:1.5,[AMETHYST_ORE]:1.4,
   [CHEST]:0.4,[CRAFTING_TABLE]:0.4,[FURNACE]:0.5,[TORCH]:0.1,
+  [MUD]:0.35,[JUNGLE_GRASS]:0.35,[TERRACOTTA]:0.5,[OBSIDIAN]:1.6,[ASH]:0.3,[DOOR]:0.4,[MUSHROOM]:0.1,[VINE]:0.1,
 };
-const WOODY = [WOOD,LEAVES,CACTUS,PLANK];
+const WOODY = [WOOD,LEAVES,CACTUS,PLANK,VINE];
 
 const TOOL_KIND = {};
 [[WOOD_PICKAXE,'pickaxe',1],[COPPER_PICKAXE,'pickaxe',2],[IRON_PICKAXE,'pickaxe',3],[GOLD_PICKAXE,'pickaxe',4],
  [WOOD_AXE,'axe',1],[COPPER_AXE,'axe',2],[IRON_AXE,'axe',3],[GOLD_AXE,'axe',4],
  [WOOD_SWORD,'sword',1],[COPPER_SWORD,'sword',2],[IRON_SWORD,'sword',3],[GOLD_SWORD,'sword',4],
+ [NIGHTBLADE,'sword',5],
 ].forEach(([id,kind,tier])=>{ TOOL_KIND[id]={kind,tier}; });
+
+const ARMOR_INFO = {};
+[[COPPER_HELMET,'helmet',4],[COPPER_CHEST,'chest',6],[COPPER_LEGS,'legs',4],
+ [IRON_HELMET,'helmet',7],[IRON_CHEST,'chest',10],[IRON_LEGS,'legs',7],
+ [GOLD_HELMET,'helmet',10],[GOLD_CHEST,'chest',14],[GOLD_LEGS,'legs',10],
+].forEach(([id,slot,defense])=>{ ARMOR_INFO[id]={slot,defense}; });
 
 const RECIPES = [
   {id:'plank', name:'Deszka', result:{id:PLANK,qty:2}, cost:[{id:WOOD,qty:1}], station:null},
@@ -351,6 +393,19 @@ const RECIPES = [
   {id:'gold_axe', name:'Arany fejsze', result:{id:GOLD_AXE,qty:1}, cost:[{id:GOLD_BAR,qty:6}], station:'table'},
   {id:'gold_sword', name:'Arany kard', result:{id:GOLD_SWORD,qty:1}, cost:[{id:GOLD_BAR,qty:5}], station:'table'},
   {id:'slime_horn', name:'Nyálka kürt', result:{id:SLIME_HORN,qty:1}, cost:[{id:SLIME_GEL,qty:5},{id:IRON_BAR,qty:3}], station:'table'},
+  {id:'copper_helmet', name:'Réz sisak', result:{id:COPPER_HELMET,qty:1}, cost:[{id:COPPER_BAR,qty:5}], station:'table'},
+  {id:'copper_chest', name:'Réz mellvért', result:{id:COPPER_CHEST,qty:1}, cost:[{id:COPPER_BAR,qty:8}], station:'table'},
+  {id:'copper_legs', name:'Réz lábvért', result:{id:COPPER_LEGS,qty:1}, cost:[{id:COPPER_BAR,qty:6}], station:'table'},
+  {id:'iron_helmet', name:'Vas sisak', result:{id:IRON_HELMET,qty:1}, cost:[{id:IRON_BAR,qty:6}], station:'table'},
+  {id:'iron_chest', name:'Vas mellvért', result:{id:IRON_CHEST,qty:1}, cost:[{id:IRON_BAR,qty:9}], station:'table'},
+  {id:'iron_legs', name:'Vas lábvért', result:{id:IRON_LEGS,qty:1}, cost:[{id:IRON_BAR,qty:7}], station:'table'},
+  {id:'gold_helmet', name:'Arany sisak', result:{id:GOLD_HELMET,qty:1}, cost:[{id:GOLD_BAR,qty:7}], station:'table'},
+  {id:'gold_chest', name:'Arany mellvért', result:{id:GOLD_CHEST,qty:1}, cost:[{id:GOLD_BAR,qty:10}], station:'table'},
+  {id:'gold_legs', name:'Arany lábvért', result:{id:GOLD_LEGS,qty:1}, cost:[{id:GOLD_BAR,qty:8}], station:'table'},
+  {id:'health_potion', name:'Gyógyitóital', result:{id:HEALTH_POTION,qty:1}, cost:[{id:MUSHROOM,qty:3}], station:null},
+  {id:'door', name:'Ajtó', result:{id:DOOR,qty:1}, cost:[{id:PLANK,qty:6}], station:null},
+  {id:'suspicious_eye', name:'Gyanús szem', result:{id:SUSPICIOUS_EYE,qty:1}, cost:[{id:SLIME_GEL,qty:6},{id:GOLD_BAR,qty:2}], station:'table'},
+  {id:'nightblade', name:'Éjpenge', result:{id:NIGHTBLADE,qty:1}, cost:[{id:NIGHT_CRYSTAL,qty:8},{id:GOLD_BAR,qty:4}], station:'table'},
 ];
 
 const CONSUMABLE_USE = {};
@@ -432,7 +487,27 @@ function drawIcon(g,id){
     case AMETHYST: g.fillStyle='#b070e6'; g.beginPath(); g.moveTo(16,4); g.lineTo(25,13); g.lineTo(20,28); g.lineTo(12,28); g.lineTo(7,13); g.closePath(); g.fill(); g.fillStyle='rgba(255,255,255,0.35)'; g.beginPath(); g.moveTo(16,4); g.lineTo(20,13); g.lineTo(12,13); g.closePath(); g.fill(); break;
     case BONE: g.strokeStyle='#e8e0c8'; g.lineWidth=5; g.lineCap='round'; g.beginPath(); g.moveTo(8,24); g.lineTo(24,8); g.stroke(); g.fillStyle='#e8e0c8'; [[8,24],[24,8]].forEach(([x,y])=>{ g.beginPath(); g.arc(x-2,y+2,3,0,7); g.arc(x+2,y-2,3,0,7); g.fill(); }); break;
     case SLIME_CROWN: g.fillStyle='#ffd85e'; g.beginPath(); g.moveTo(6,24); g.lineTo(6,14); g.lineTo(11,19); g.lineTo(16,10); g.lineTo(21,19); g.lineTo(26,14); g.lineTo(26,24); g.closePath(); g.fill(); break;
-    default: ic_rect(g,6,6,20,20, baseColor||'#888'); break;
+    case MUD: ic_rect(g,4,4,24,24,'#5a4230'); for(let i=0;i<9;i++) ic_speck(g,6+((i*7)%20),6+((i*5)%20),2,'#3f2e20'); break;
+    case JUNGLE_GRASS: ic_rect(g,4,4,24,24,'#2f9e3f'); ic_rect(g,4,4,24,9,'#249e2a'); break;
+    case TERRACOTTA: ic_rect(g,4,4,24,24,'#b5502f'); ic_rect(g,4,10,24,2,'#8f3d22'); ic_rect(g,4,17,24,2,'#8f3d22'); break;
+    case OBSIDIAN: ic_rect(g,4,4,24,24,'#241a33'); ic_speck(g,10,10,3,'#3a2a52'); ic_speck(g,18,18,3,'#3a2a52'); break;
+    case ASH: ic_rect(g,4,4,24,24,'#726a6e'); for(let i=0;i<8;i++) ic_speck(g,6+((i*8)%20),6+((i*6)%20),2,'#5a5256'); break;
+    case DOOR: ic_rect(g,7,3,18,26,'#8a5a2b'); ic_rect(g,7,3,18,3,'#5a3d22'); ic_rect(g,7,26,18,3,'#5a3d22'); ic_speck(g,20,15,2,'#e0c080'); break;
+    case MUSHROOM: ic_rect(g,15,16,2,10,'#e8e0c8'); g.fillStyle='#d43e3e'; g.beginPath(); g.ellipse(16,14,8,5,0,0,7); g.fill(); g.fillStyle='#fff'; ic_speck(g,12,11,2,'#fff'); ic_speck(g,19,13,2,'#fff'); break;
+    case VINE: g.strokeStyle='#2f9e3f'; g.lineWidth=3; g.beginPath(); g.moveTo(16,2); g.quadraticCurveTo(10,16,16,30); g.stroke(); break;
+    case HEALTH_POTION: ic_rect(g,12,8,8,18,'#e34ba0'); ic_rect(g,14,4,4,5,'#8a5a2b'); g.fillStyle='rgba(255,255,255,0.4)'; ic_rect(g,13,12,2,10,'rgba(255,255,255,0.4)'); break;
+    case SUSPICIOUS_EYE: g.fillStyle='#e8dede'; g.beginPath(); g.ellipse(16,16,12,8,0,0,7); g.fill(); g.fillStyle='#8a5cd6'; g.beginPath(); g.arc(16,16,4,0,7); g.fill(); g.fillStyle='#000'; g.beginPath(); g.arc(16,16,1.6,0,7); g.fill(); break;
+    case NIGHT_CRYSTAL: g.fillStyle='#7a5ce0'; g.beginPath(); g.moveTo(16,3); g.lineTo(24,14); g.lineTo(19,29); g.lineTo(13,29); g.lineTo(8,14); g.closePath(); g.fill(); g.fillStyle='rgba(255,255,255,0.4)'; g.beginPath(); g.moveTo(16,3); g.lineTo(19,14); g.lineTo(13,14); g.closePath(); g.fill(); break;
+    default:
+      if (ARMOR_INFO[id]){
+        const info = ARMOR_INFO[id];
+        g.fillStyle = baseColor;
+        if (info.slot==='helmet'){ g.beginPath(); g.arc(16,17,9,Math.PI,0); g.fill(); g.fillRect(7,17,18,5); }
+        else if (info.slot==='chest'){ g.fillRect(9,7,14,18); g.fillRect(5,9,5,10); g.fillRect(22,9,5,10); }
+        else { g.fillRect(9,6,6,22); g.fillRect(17,6,6,22); }
+        break;
+      }
+      ic_rect(g,6,6,20,20, baseColor||'#888'); break;
   }
 }
 
@@ -512,7 +587,7 @@ function buildTilePatterns(){
 }
 
 /* ============================================================ WORLD */
-const W = 260, H = 130;
+const W = 480, H = 230;
 const world = new Uint8Array(W*H);
 const idx = (x,y) => y*W+x;
 function getTile(x,y){
@@ -529,13 +604,16 @@ const chestStorage = new Map();
 const torchPositions = new Set();
 
 function biomeAt(x){
-  if (x < 55) return 'desert';
-  if (x > W-55) return 'snow';
-  return 'forest';
+  const f = x/W;
+  if (f<0.13) return 'snow';
+  if (f<0.30) return 'jungle';
+  if (f<0.68) return 'forest';
+  if (f<0.85) return 'desert';
+  return 'mesa';
 }
 function biomeLabel(x){
   const b = biomeAt(x);
-  return b==='desert' ? 'Sivatag' : b==='snow' ? 'Hósík' : 'Erdő';
+  return b==='desert' ? 'Sivatag' : b==='snow' ? 'Hósík' : b==='jungle' ? 'Dzsungel' : b==='mesa' ? 'Vörös-fennsík' : 'Erdő';
 }
 
 function genWorld(){
@@ -549,14 +627,16 @@ function genWorld(){
     );
     surfaceH[x]=h;
     const biome = biomeAt(x);
-    const topTile = biome==='desert'?SAND : biome==='snow'?SNOWBLOCK : GRASS;
-    const subTile = biome==='desert'?SANDSTONE : DIRT;
+    const topTile = biome==='desert'?SAND : biome==='snow'?SNOWBLOCK : biome==='jungle'?JUNGLE_GRASS : biome==='mesa'?TERRACOTTA : GRASS;
+    const subTile = biome==='desert'?SANDSTONE : biome==='jungle'?MUD : biome==='mesa'?TERRACOTTA : DIRT;
     for (let y=0;y<H;y++){
       let t;
       if (y<h) t=AIR;
       else if (y===h) t=topTile;
       else if (y<h+4) t=subTile;
-      else t = (y>H-40) ? CAVERN_STONE : STONE;
+      else if (y>H-16) t = OBSIDIAN;
+      else if (y>H-65) t = CAVERN_STONE;
+      else t = STONE;
       if (y>h+3 && y<H-3){
         const cv = noise2D(x*0.09, y*0.09) + noise2D(x*0.2+50,y*0.2+50)*0.4;
         if (cv>0.78) t=AIR;
@@ -565,11 +645,10 @@ function genWorld(){
       world[idx(x,y)]=t;
     }
   }
-  function scatterOre(oreId, minDepthRows, maxDepthRows, tries, veinSize){
+  function scatterOre(oreId, minFrac, maxFrac, tries, veinSize){
     for (let i=0;i<tries;i++){
       const x = Math.floor(hash(i*7+1, oreId*13)*W);
-      const dRange = maxDepthRows-minDepthRows;
-      const depth = minDepthRows + Math.floor(hash(i*3+2, oreId*17)*dRange);
+      const depth = Math.round(H*(minFrac + hash(i*3+2, oreId*17)*(maxFrac-minFrac)));
       const y = surfaceH[x]+depth;
       if (y<=0||y>=H-3) continue;
       for (let v=0; v<veinSize; v++){
@@ -580,29 +659,38 @@ function genWorld(){
       }
     }
   }
-  scatterOre(COPPER_ORE, 6, 26, 110, 6);
-  scatterOre(IRON_ORE, 20, 55, 85, 6);
-  scatterOre(GOLD_ORE, 45, 85, 55, 5);
-  scatterOre(AMETHYST_ORE, 78, 110, 45, 5);
+  scatterOre(COPPER_ORE, 0.04, 0.18, 220, 6);
+  scatterOre(IRON_ORE, 0.14, 0.36, 170, 6);
+  scatterOre(GOLD_ORE, 0.32, 0.58, 110, 5);
+  scatterOre(AMETHYST_ORE, 0.56, 0.80, 90, 5);
 
-  // trees (forest + snow biome)
+  // trees (forest + snow + jungle biome)
   let lastTree = -10;
   for (let x=2;x<W-2;x++){
     const biome = biomeAt(x);
-    if (biome==='desert') continue;
-    if (world[idx(x,surfaceH[x])]!==GRASS && world[idx(x,surfaceH[x])]!==SNOWBLOCK) continue;
-    if (x-lastTree<4) continue;
-    if (hash(x, 999) > 0.85){
+    if (biome==='desert' || biome==='mesa') continue;
+    const surfT = world[idx(x,surfaceH[x])];
+    if (surfT!==GRASS && surfT!==SNOWBLOCK && surfT!==JUNGLE_GRASS) continue;
+    const minGap = biome==='jungle' ? 2 : 4;
+    if (x-lastTree<minGap) continue;
+    const chance = biome==='jungle' ? 0.6 : 0.85;
+    if (hash(x, 999) > chance){
       const h = surfaceH[x];
-      const trunk = 4 + Math.floor(hash(x,111)*3);
+      const trunk = (biome==='jungle' ? 6 : 4) + Math.floor(hash(x,111)*3);
       for (let t=1;t<=trunk;t++) setTile(x, h-t, WOOD);
       const top = h-trunk;
+      const canopy = biome==='jungle' ? 4 : 3;
       for (let ly=-2; ly<=1; ly++){
-        for (let lx=-2; lx<=2; lx++){
-          if (Math.abs(lx)+Math.abs(ly)<=3 && getTile(x+lx, top+ly)===AIR){
+        for (let lx=-canopy; lx<=canopy; lx++){
+          if (Math.abs(lx)+Math.abs(ly)<=canopy+1 && getTile(x+lx, top+ly)===AIR){
             setTile(x+lx, top+ly, LEAVES);
           }
         }
+      }
+      // hanging vines under jungle canopy
+      if (biome==='jungle' && hash(x,321)>0.4){
+        const vlen = 2+Math.floor(hash(x,322)*4);
+        for (let v=1; v<=vlen; v++){ if (getTile(x,top+2+v)===AIR) setTile(x,top+2+v,VINE); else break; }
       }
       lastTree = x;
     }
@@ -616,11 +704,27 @@ function genWorld(){
       for (let c=1;c<=ch;c++) setTile(x, surfaceH[x]-c, CACTUS);
     }
   }
-  // underground lakes: water (mid depth) & lava (deep)
-  function scatterLiquid(liquidId, minDepth, maxDepth, tries, poolSize){
+  // mushrooms (jungle floor)
+  for (let x=2;x<W-2;x++){
+    if (biomeAt(x)!=='jungle') continue;
+    if (world[idx(x,surfaceH[x])]!==JUNGLE_GRASS) continue;
+    if (hash(x,666)>0.82) setTile(x, surfaceH[x]-1, MUSHROOM);
+  }
+  // ash patches near the very bottom (hell layer)
+  for (let i=0;i<80;i++){
+    const x = Math.floor(hash(i*13+1,4321)*W);
+    const y = Math.round(H*(0.94+hash(i*17+2,4322)*0.045));
+    for (let v=0; v<5; v++){
+      const ox=x+Math.floor((hash(i+v,4323)-0.5)*5), oy=y+Math.floor((hash(i+v,4324)-0.5)*3);
+      if (getTile(ox,oy)===OBSIDIAN) setTile(ox,oy,ASH);
+    }
+  }
+
+  // underground lakes: water (mid depth) & lava (deep + hell layer)
+  function scatterLiquid(liquidId, minFrac, maxFrac, tries, poolSize){
     for (let i=0;i<tries;i++){
       const x = 4+Math.floor(hash(i*11+3, liquidId*19)*(W-8));
-      const depth = minDepth+Math.floor(hash(i*5+4, liquidId*23)*(maxDepth-minDepth));
+      const depth = Math.round(H*(minFrac + hash(i*5+4, liquidId*23)*(maxFrac-minFrac)));
       const y = surfaceH[x]+depth;
       if (y<=0||y>=H-4) continue;
       if (getTile(x,y)!==AIR) continue;
@@ -631,11 +735,12 @@ function genWorld(){
       }
     }
   }
-  scatterLiquid(WATER, 20, 55, 20, 10);
-  scatterLiquid(LAVA, 80, 118, 16, 9);
+  scatterLiquid(WATER, 0.14, 0.36, 36, 10);
+  scatterLiquid(LAVA, 0.58, 0.82, 30, 9);
+  scatterLiquid(LAVA, 0.90, 0.97, 60, 14);
 
   // loot chests
-  for (let i=0;i<6;i++){
+  for (let i=0;i<14;i++){
     const x = 10+Math.floor(hash(i*31+5,777)*(W-20));
     for (let y=surfaceH[x]+10; y<H-6; y++){
       if (getTile(x,y)===AIR && isSolid(getTile(x,y+1))){
@@ -666,7 +771,7 @@ function makeBody(x,y,w,h){ return {x,y,w,h,vx:0,vy:0,grounded:false}; }
 function bodyOverlapsSolid(b){
   const x0=Math.floor(b.x/TS), x1=Math.floor((b.x+b.w-0.01)/TS);
   const y0=Math.floor(b.y/TS), y1=Math.floor((b.y+b.h-0.01)/TS);
-  for (let ty=y0; ty<=y1; ty++) for (let tx=x0; tx<=x1; tx++) if (isSolid(getTile(tx,ty))) return true;
+  for (let ty=y0; ty<=y1; ty++) for (let tx=x0; tx<=x1; tx++) if (isSolid(getTile(tx,ty),tx,ty)) return true;
   return false;
 }
 function moveBodyStepX(b, dx){
@@ -677,7 +782,7 @@ function moveBodyStepX(b, dx){
   let resolved = null;
   for (let ty=y0; ty<=y1; ty++){
     for (let tx=x0; tx<=x1; tx++){
-      if (isSolid(getTile(tx,ty))){
+      if (isSolid(getTile(tx,ty),tx,ty)){
         if (dx>0){ const c=tx*TS-b.w; if (resolved===null||c<resolved) resolved=c; }
         else { const c=(tx+1)*TS; if (resolved===null||c>resolved) resolved=c; }
       }
@@ -694,7 +799,7 @@ function moveBodyStepY(b, dy){
   let grounded = false;
   for (let ty=y0; ty<=y1; ty++){
     for (let tx=x0; tx<=x1; tx++){
-      if (isSolid(getTile(tx,ty))){
+      if (isSolid(getTile(tx,ty),tx,ty)){
         if (dy>0){ const c=ty*TS-b.h; if (resolved===null||c<resolved) resolved=c; grounded=true; }
         else { const c=(ty+1)*TS; if (resolved===null||c>resolved) resolved=c; }
       }
@@ -754,14 +859,38 @@ const player = {
   inWater:false, inLava:false,
 };
 CONSUMABLE_USE[SLIME_CROWN] = ()=>{ player.maxHp+=20; player.hp=player.maxHp; showToast('👑 Maximum életerő +20!'); };
+CONSUMABLE_USE[HEALTH_POTION] = ()=>{ player.hp=Math.min(player.maxHp, player.hp+40); showToast('❤️ +40 élet'); };
 
 /* ============================================================ INVENTORY (free slots — player decides placement) */
 const HOTBAR_SIZE = 10;
 const BACKPACK_SIZE = 40;
 const SLOT_COUNT = HOTBAR_SIZE + BACKPACK_SIZE;
+const EQUIP_HELMET = SLOT_COUNT, EQUIP_CHEST = SLOT_COUNT+1, EQUIP_LEGS = SLOT_COUNT+2;
+const TOTAL_SLOTS = SLOT_COUNT+3;
 const MAX_STACK = 999;
-const slots = new Array(SLOT_COUNT).fill(null);
+const slots = new Array(TOTAL_SLOTS).fill(null);
 let activeSlot = 0;
+
+function slotAcceptsItem(slotIndex, itemId){
+  if (slotIndex===EQUIP_HELMET) return !!(ARMOR_INFO[itemId] && ARMOR_INFO[itemId].slot==='helmet');
+  if (slotIndex===EQUIP_CHEST) return !!(ARMOR_INFO[itemId] && ARMOR_INFO[itemId].slot==='chest');
+  if (slotIndex===EQUIP_LEGS) return !!(ARMOR_INFO[itemId] && ARMOR_INFO[itemId].slot==='legs');
+  return true;
+}
+function totalDefense(){
+  let d=0;
+  for (const i of [EQUIP_HELMET, EQUIP_CHEST, EQUIP_LEGS]){
+    const s = slots[i];
+    if (s && ARMOR_INFO[s.id]) d += ARMOR_INFO[s.id].defense;
+  }
+  return d;
+}
+function applyDefense(dmg){
+  return Math.max(dmg*0.15, dmg-totalDefense());
+}
+function defenseReductionPct(){
+  return Math.min(0.6, totalDefense()*0.02);
+}
 
 function findFirstFree(){
   for (let i=0;i<SLOT_COUNT;i++) if (!slots[i]) return i;
@@ -789,7 +918,7 @@ function addInventory(id, qty){
 }
 function countItem(id){
   let n=0;
-  for (const s of slots) if (s && s.id===id) n+=s.qty;
+  for (let i=0;i<SLOT_COUNT;i++){ const s=slots[i]; if (s && s.id===id) n+=s.qty; }
   return n;
 }
 function consumeItem(id, qty){
@@ -831,16 +960,19 @@ function unlock(id, msg){
 
 /* ============================================================ ENEMIES */
 const enemies = [];
+const projectiles = [];
 function spawnEnemy(type, x, y){
   const stats = {
     slime:{w:14,h:14,hp:30,dmg:10,color:'#5fd66a'},
     zombie:{w:12,h:26,hp:60,dmg:16,color:'#7a9b6e'},
     bat:{w:12,h:10,hp:15,dmg:6,color:'#4a3b52',flying:true},
     kingslime:{w:34,h:34,hp:320,dmg:22,color:'#2fae46'},
+    eyeboss:{w:30,h:28,hp:450,dmg:20,color:'#e8dede',flying:true},
   }[type];
   enemies.push({
     type, body:makeBody(x,y,stats.w,stats.h), hp:stats.hp, maxHp:stats.hp, dmg:stats.dmg,
     color:stats.color, flying:!!stats.flying, hopTimer:Math.random()*1.2, phase:Math.random()*6.28, dead:false,
+    shootTimer: 1.5, chargeTimer: 1.2, charging:false,
   });
 }
 function groundYAt(x){
@@ -868,6 +1000,16 @@ function spawnKingSlime(){
   showToast('👑 A Nyálka Király megjelent!');
   sfxBoss();
 }
+function spawnEyeBoss(){
+  const px=Math.floor(player.body.x/TS) + (Math.random()<0.5?-8:8);
+  const py=Math.max(4, Math.floor(player.body.y/TS)-8);
+  spawnEnemy('eyeboss', px*TS, py*TS);
+  showToast('👁 Az Éjszem megjelent!');
+  sfxBoss();
+}
+function spawnProjectile(x,y,vx,vy,dmg,color){
+  projectiles.push({x,y,vx,vy,dmg,color,life:5});
+}
 function findCaveSpawnSpot(){
   const px=Math.floor(player.body.x/TS), py=Math.floor(player.body.y/TS);
   for (let attempt=0; attempt<12; attempt++){
@@ -893,6 +1035,12 @@ function killEnemy(en){
     addInventory(SLIME_CROWN,1);
     showToast('+1 👑 Nyálka korona');
     unlock('king_slime','Legyőzted a Nyálka Királyt!');
+  }
+  else if (en.type==='eyeboss'){
+    addInventory(NIGHT_CRYSTAL, 10+Math.floor(Math.random()*6));
+    addInventory(GOLD_BAR, 3);
+    showToast('+💎 Éjkristályok, +Aranyrúd');
+    unlock('eye_boss','Legyőzted az Éjszemet!');
   }
   unlock('first_kill','Első győzelem!');
   sfxHit();
@@ -1091,6 +1239,7 @@ function breakTile(tx,ty,t){
     }
   }
   if (t===TORCH) torchPositions.delete(tx+','+ty);
+  if (t===DOOR) doorOpen.delete(tx+','+ty);
   setTile(tx,ty,AIR);
   if (def && def.drop!=null) addInventory(def.drop,1);
   spawnBreakParticles(tx*TS+TS/2, ty*TS+TS/2, def?(def.color||'#888'):'#888');
@@ -1160,13 +1309,24 @@ function tryPlaceOrUse(){
   if (Math.hypot(wx-pcx, wy-pcy)>player.reach) return;
   const targetTile = getTile(tx,ty);
   if (targetTile===CHEST){ openChest(tx,ty); placeCooldown=0.25; return; }
+  if (targetTile===DOOR){
+    const key=tx+','+ty;
+    if (doorOpen.has(key)) doorOpen.delete(key); else doorOpen.add(key);
+    sfxPlace();
+    placeCooldown=0.22;
+    return;
+  }
   if (item===SLIME_HORN){
     consumeFromSlot(activeSlot,1); spawnKingSlime(); placeCooldown=1; return;
+  }
+  if (item===SUSPICIOUS_EYE){
+    consumeFromSlot(activeSlot,1); spawnEyeBoss(); placeCooldown=1; return;
   }
   if (CONSUMABLE_USE[item]){
     CONSUMABLE_USE[item](); consumeFromSlot(activeSlot,1); placeCooldown=0.3; return;
   }
   if (TOOL_KIND[item]) return; // tools aren't placed — select them to mine/fight with them
+  if (ARMOR_INFO[item]) return; // armor is equipped in the backpack panel, not placed
   if (!TILES[item]) return; // not a placeable block
   if (targetTile!==AIR) return;
   const box={x:tx*TS,y:ty*TS,w:TS,h:TS};
@@ -1245,7 +1405,16 @@ function slotClicked(i){
   } else if (swapSelection===i){
     swapSelection = null;
   } else {
-    const tmp = slots[i]; slots[i] = slots[swapSelection]; slots[swapSelection] = tmp;
+    const a = slots[swapSelection], b = slots[i];
+    const aFitsInI = !a || slotAcceptsItem(i, a.id);
+    const bFitsInSel = !b || slotAcceptsItem(swapSelection, b.id);
+    if (!aFitsInI || !bFitsInSel){
+      showToast('⚠ Ide nem illik ez a tárgy');
+      swapSelection = null;
+      refreshInventoryPanel();
+      return;
+    }
+    slots[i] = a; slots[swapSelection] = b;
     swapSelection = null;
   }
   refreshInventoryPanel();
@@ -1299,6 +1468,12 @@ function refreshInventoryPanel(){
     const el = makeSlotEl(i, 'hotbarSlot'+(i===activeSlot?' active':''));
     hbGrid.appendChild(el);
   }
+  const eqGrid = document.getElementById('equipGrid'); eqGrid.innerHTML='';
+  eqGrid.appendChild(makeSlotEl(EQUIP_HELMET, 'hotbarSlot'));
+  eqGrid.appendChild(makeSlotEl(EQUIP_CHEST, 'hotbarSlot'));
+  eqGrid.appendChild(makeSlotEl(EQUIP_LEGS, 'hotbarSlot'));
+  document.getElementById('defenseLabel').textContent = '(Védelem: '+totalDefense()+')';
+
   const grid = document.getElementById('invGrid'); grid.innerHTML='';
   for (let i=HOTBAR_SIZE;i<SLOT_COUNT;i++) grid.appendChild(makeSlotEl(i));
 
@@ -1369,6 +1544,7 @@ function saveGame(){
     slots, activeSlot, cycleT, achieved:Array.from(achieved),
     chest:Array.from(chestStorage.entries()),
     torches:Array.from(torchPositions),
+    doors:Array.from(doorOpen),
   };
   const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -1384,12 +1560,13 @@ function loadGameFile(file){
       world.set(data.world);
       player.body.x = data.player.x; player.body.y = data.player.y;
       player.hp = data.player.hp; player.maxHp = data.player.maxHp;
-      for (let i=0;i<SLOT_COUNT;i++) slots[i] = (data.slots && data.slots[i]) ? data.slots[i] : null;
+      for (let i=0;i<TOTAL_SLOTS;i++) slots[i] = (data.slots && data.slots[i]) ? data.slots[i] : null;
       activeSlot = data.activeSlot||0;
       cycleT = data.cycleT||0;
       achieved.clear(); (data.achieved||[]).forEach(a=>achieved.add(a));
       chestStorage.clear(); (data.chest||[]).forEach(([k,v])=>chestStorage.set(k,v));
       torchPositions.clear(); (data.torches||[]).forEach(t=>torchPositions.add(t));
+      doorOpen.clear(); (data.doors||[]).forEach(t=>doorOpen.add(t));
       explored.fill(0); mmCtx.clearRect(0,0,W,H);
       closeAllPanels();
       showToast('📂 Betöltve!');
@@ -1558,10 +1735,10 @@ function update(dt){
   if (b.y>H*TS+200) player.hp=0;
 
   if (player.inLava){
-    player.hp -= 45*dt;
+    player.hp -= 45*dt*(1-defenseReductionPct());
     if (Math.random()<0.06) spawnDamageNumber(b.x+b.w/2,b.y,4,'#ff6a00');
   }
-  if (inCactus && player.invuln<=0){ player.hp-=8; player.invuln=0.6; sfxHurt(); }
+  if (inCactus && player.invuln<=0){ player.hp-=applyDefense(8); player.invuln=0.6; sfxHurt(); }
 
   player.invuln = Math.max(0, player.invuln-dt);
   player.attackCooldown = Math.max(0, player.attackCooldown-dt);
@@ -1572,7 +1749,40 @@ function update(dt){
 
   for (const en of enemies){
     if (en.dead) continue;
-    if (en.flying){
+    if (en.type==='eyeboss'){
+      const enraged = en.hp < en.maxHp*0.5;
+      const dx = player.body.x-en.body.x, dy=(player.body.y-30)-en.body.y;
+      const dist = Math.hypot(dx,dy);
+      if (en.charging){
+        en.chargeTimer -= dt;
+        if (en.chargeTimer<=0 || dist<20){ en.charging=false; en.chargeTimer = enraged?0.8:1.4; }
+      } else {
+        en.chargeTimer -= dt;
+        const ang = Math.atan2(dy,dx);
+        if (en.chargeTimer<=0){
+          en.charging = true;
+          const spd = enraged?340:240;
+          en.body.vx = Math.cos(ang)*spd;
+          en.body.vy = Math.sin(ang)*spd;
+          en.chargeTimer = 0.45;
+        } else {
+          const targetDist = 90, hoverSpeed = 60;
+          if (dist>targetDist+20){ en.body.vx=Math.cos(ang)*hoverSpeed; en.body.vy=Math.sin(ang)*hoverSpeed; }
+          else if (dist<targetDist-20){ en.body.vx=-Math.cos(ang)*hoverSpeed; en.body.vy=-Math.sin(ang)*hoverSpeed; }
+          else { en.phase+=dt*2; en.body.vx=Math.cos(en.phase)*40; en.body.vy=Math.sin(en.phase*1.3)*25; }
+        }
+      }
+      moveBody(en.body, en.body.vx*dt, 0);
+      moveBody(en.body, 0, en.body.vy*dt);
+      en.shootTimer -= dt;
+      if (en.shootTimer<=0 && !en.charging){
+        en.shootTimer = enraged?1.0:1.8;
+        const ecx=en.body.x+en.body.w/2, ecy=en.body.y+en.body.h/2;
+        const pcx2=player.body.x+player.body.w/2, pcy2=player.body.y+player.body.h/2;
+        const ang2 = Math.atan2(pcy2-ecy, pcx2-ecx);
+        spawnProjectile(ecx,ecy, Math.cos(ang2)*130, Math.sin(ang2)*130, 14, '#ff5a5a');
+      }
+    } else if (en.flying){
       en.phase += dt*3;
       const dx = player.body.x-en.body.x, dy = player.body.y-en.body.y;
       const dist = Math.hypot(dx,dy);
@@ -1599,8 +1809,9 @@ function update(dt){
     const overlap = !(en.body.x+en.body.w<player.body.x || en.body.x>player.body.x+player.body.w ||
                        en.body.y+en.body.h<player.body.y || en.body.y>player.body.y+player.body.h);
     if (overlap && player.invuln<=0){
-      player.hp -= en.dmg;
-      spawnDamageNumber(player.body.x+player.body.w/2, player.body.y, en.dmg, '#ff8080');
+      const dmg = applyDefense(en.dmg);
+      player.hp -= dmg;
+      spawnDamageNumber(player.body.x+player.body.w/2, player.body.y, dmg, '#ff8080');
       player.invuln = 0.8;
       player.body.vx += Math.sign(player.body.x-en.body.x)*90;
       player.body.vy = -120;
@@ -1610,6 +1821,27 @@ function update(dt){
     if (en.hp<=0 && !en.dead) killEnemy(en);
   }
   for (let i=enemies.length-1;i>=0;i--) if (enemies[i].dead) enemies.splice(i,1);
+
+  for (let i=projectiles.length-1;i>=0;i--){
+    const p = projectiles[i];
+    p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt;
+    let remove = p.life<=0;
+    const ptx=Math.floor(p.x/TS), pty=Math.floor(p.y/TS);
+    if (!remove && isSolid(getTile(ptx,pty), ptx, pty)) remove=true;
+    if (!remove){
+      const pcx3=player.body.x+player.body.w/2, pcy3=player.body.y+player.body.h/2;
+      if (Math.hypot(p.x-pcx3,p.y-pcy3) < 10 && player.invuln<=0){
+        const dmg = applyDefense(p.dmg);
+        player.hp -= dmg;
+        spawnDamageNumber(pcx3,pcy3,dmg,'#ff8080');
+        player.invuln = 0.6;
+        sfxHurt();
+        if (player.hp<=0){ player.hp=0; die(); }
+        remove = true;
+      }
+    }
+    if (remove) projectiles.splice(i,1);
+  }
 
   if (player.hp<player.maxHp && !isDead) player.hp = Math.min(player.maxHp, player.hp + dt*0.6);
 
@@ -1744,9 +1976,19 @@ function render(){
       } else if (t===WATER){
         ctx.fillStyle = caveBgColor(Math.max(0,depth)); ctx.fillRect(sx,sy,TS+1,TS+1);
         ctx.fillStyle = 'rgba(58,107,207,0.55)'; ctx.fillRect(sx,sy,TS+1,TS+1);
+      } else if (t===DOOR){
+        if (depth>0){ ctx.fillStyle=caveBgColor(depth); ctx.fillRect(sx,sy,TS+1,TS+1); }
+        const open = doorOpen.has(tx+','+ty);
+        if (open){
+          ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+1,sy,3,TS);
+        } else {
+          ctx.fillStyle='#8a5a2b'; ctx.fillRect(sx+2,sy,TS-4,TS);
+          ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+2,sy,TS-4,2); ctx.fillRect(sx+2,sy+TS-2,TS-4,2);
+          ctx.fillStyle='#e0c080'; ctx.fillRect(sx+TS-6,sy+TS/2-1,2,2);
+        }
       } else {
         ctx.fillStyle = def.color; ctx.fillRect(sx,sy,TS+1,TS+1);
-        if (t===GRASS){ ctx.fillStyle=def.top; ctx.fillRect(sx,sy,TS+1,3); }
+        if (t===GRASS || t===JUNGLE_GRASS){ ctx.fillStyle=def.top; ctx.fillRect(sx,sy,TS+1,3); }
         if (t===COPPER_ORE||t===IRON_ORE||t===GOLD_ORE||t===AMETHYST_ORE){
           ctx.fillStyle='rgba(0,0,0,0.15)';
           ctx.fillRect(sx+3,sy+3,4,4); ctx.fillRect(sx+9,sy+8,3,3);
@@ -1755,6 +1997,19 @@ function render(){
         if (t===CHEST){ ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+2,sy+4,TS-4,TS-6); ctx.fillStyle='#d8b978'; ctx.fillRect(sx+2,sy+7,TS-4,2); }
         if (t===CRAFTING_TABLE){ ctx.fillStyle='#3a2a17'; ctx.fillRect(sx+1,sy+10,TS-2,4); ctx.fillRect(sx+2,sy+2,3,12); ctx.fillRect(sx+TS-5,sy+2,3,12); }
         if (t===FURNACE){ ctx.fillStyle='#2a2a2a'; ctx.fillRect(sx+1,sy+1,TS-2,TS-2); ctx.fillStyle='#ff7a30'; ctx.fillRect(sx+5,sy+8,6,5); }
+        if (t===MUSHROOM){
+          ctx.fillStyle='#e8e0c8'; ctx.fillRect(sx+TS/2-1,sy+8,2,7);
+          ctx.fillStyle='#d43e3e'; ctx.beginPath(); ctx.ellipse(sx+TS/2,sy+7,6,4,0,0,7); ctx.fill();
+          ctx.fillStyle='#fff'; ctx.fillRect(sx+TS/2-3,sy+5,1,1); ctx.fillRect(sx+TS/2+2,sy+6,1,1);
+        }
+        if (t===VINE){
+          ctx.strokeStyle='#2f9e3f'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.moveTo(sx+TS/2,sy); ctx.lineTo(sx+TS/2,sy+TS); ctx.stroke();
+        }
+        if (t===TERRACOTTA){
+          ctx.fillStyle='rgba(0,0,0,0.12)';
+          ctx.fillRect(sx,sy+5,TS+1,2); ctx.fillRect(sx,sy+11,TS+1,2);
+        }
       }
       const light = computeLight(tx,ty,isNight,sky.t,nearbyTorches);
       if (light<0.97){ ctx.fillStyle='rgba(0,0,10,'+(1-light)+')'; ctx.fillRect(sx,sy,TS+1,TS+1); }
@@ -1789,6 +2044,24 @@ function render(){
       ctx.beginPath(); ctx.ellipse(cx+en.body.w*0.55, sy+en.body.h/2, en.body.w*0.5*flap, en.body.h*0.3,-0.3,0,7); ctx.fill();
       ctx.beginPath(); ctx.ellipse(cx, sy+en.body.h/2, en.body.w*0.4, en.body.h*0.5,0,0,7); ctx.fill();
       ctx.fillStyle='#ffcc66'; ctx.fillRect(sx+2,sy+3,2,2); ctx.fillRect(sx+en.body.w-4,sy+3,2,2);
+    } else if (en.type==='eyeboss'){
+      const enraged = en.hp < en.maxHp*0.5;
+      const cyE = sy+en.body.h/2;
+      const wobble = Math.sin(performance.now()/140+en.phase)*2;
+      ctx.fillStyle = enraged ? '#ff8a8a' : '#e8dede';
+      ctx.beginPath(); ctx.ellipse(cx, cyE+wobble, en.body.w/2, en.body.h/2, 0,0,7); ctx.fill();
+      ctx.fillStyle = enraged ? '#7a0000' : '#3a2a4a';
+      ctx.beginPath(); ctx.ellipse(cx, cyE+wobble, en.body.w*0.32, en.body.h*0.32, 0,0,7); ctx.fill();
+      ctx.fillStyle = enraged ? '#ff2a2a' : '#8a5cd6';
+      ctx.beginPath(); ctx.arc(cx, cyE+wobble, en.body.w*0.15, 0,7); ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,0.4)';
+      for (let i=0;i<8;i++){
+        const a = (i/8)*Math.PI*2 + en.phase*0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(a)*en.body.w*0.4, cyE+wobble+Math.sin(a)*en.body.h*0.4);
+        ctx.lineTo(cx+Math.cos(a)*en.body.w*0.62, cyE+wobble+Math.sin(a)*en.body.h*0.62);
+        ctx.stroke();
+      }
     } else if (en.type==='zombie'){
       const armSwing = Math.sin(performance.now()/180+en.phase)*4;
       ctx.fillStyle='#5a7a52';
@@ -1821,6 +2094,19 @@ function render(){
     ctx.fillStyle='#e05a54'; ctx.fillRect(sx, sy-6, en.body.w*(en.hp/en.maxHp), 3);
   }
 
+  for (const p of projectiles){
+    const sx=p.x-camera.x, sy=p.y-camera.y;
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const grad = ctx.createRadialGradient(sx,sy,0,sx,sy,9);
+    grad.addColorStop(0,'rgba(255,255,255,0.9)'); grad.addColorStop(0.4,p.color); grad.addColorStop(1,'rgba(255,90,90,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath(); ctx.arc(sx,sy,9,0,7); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(sx,sy,3,0,7); ctx.fill();
+  }
+
   renderParticles();
 
   const pb = player.body;
@@ -1842,7 +2128,7 @@ function render(){
 
   const heldSlotData = slots[activeSlot];
   const heldTk = heldSlotData ? TOOL_KIND[heldSlotData.id] : null;
-  const toolColors = ['#8a8a8a','#a9713f','#c97a3d','#c9beae','#f2c94c'];
+  const toolColors = ['#8a8a8a','#a9713f','#c97a3d','#c9beae','#f2c94c','#7a5ce0'];
   const isSwordHeld = heldTk && heldTk.kind==='sword';
 
   if (isSwordHeld && swordSwing.active){
