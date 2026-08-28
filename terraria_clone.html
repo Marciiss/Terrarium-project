@@ -45,6 +45,18 @@
     border-radius:6px; padding:6px 9px; cursor:pointer; font-size:14px; pointer-events:auto;
   }
   #btnRow button:hover, #helpBtn:hover{border-color:var(--accent);}
+  #saveMenuWrap{position:relative;}
+  #saveMenu{
+    display:none; position:absolute; bottom:115%; right:0; background:var(--panel);
+    border:2px solid var(--panel-border); border-radius:6px; padding:6px; white-space:nowrap;
+    flex-direction:column; gap:4px; z-index:20;
+  }
+  #saveMenu.show{display:flex;}
+  #saveMenu button{
+    background:var(--slot); border:1px solid var(--panel-border); color:var(--text);
+    border-radius:5px; padding:6px 10px; cursor:pointer; font-size:12px; text-align:left;
+  }
+  #saveMenu button:hover{border-color:var(--accent);}
 
   #hotbar{
     position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
@@ -152,7 +164,14 @@
         <button id="helpBtn">❔</button>
         <button id="invBtn">🎒</button>
         <button id="muteBtn">🔊</button>
-        <button id="saveBtn">💾</button>
+        <div id="saveMenuWrap">
+          <button id="saveBtn">💾</button>
+          <div id="saveMenu">
+            <button id="saveFullBtn">💾 Teljes mentés (pálya is)</button>
+            <button id="saveInvBtn">🧳 Csak táska</button>
+            <button id="saveCharBtn">🪪 Csak karakter</button>
+          </div>
+        </div>
         <button id="loadBtn">📂</button>
       </div>
     </div>
@@ -171,6 +190,7 @@
     <div><b>Lerakás / Láda kinyitása:</b> Jobb klikk</div>
     <div><b>Tárgy váltás:</b> 1–9, 0 vagy egérgörgő</div>
     <div><b>Táska és kovácsolás:</b> I &nbsp; | &nbsp; <b>Némítás:</b> M &nbsp; | &nbsp; <b>Bezárás:</b> Esc</div>
+    <div>A 💾 gomb mellett választhatsz: teljes mentés, csak a táska, vagy csak a karakter — így régebbi/eltérő pályás mentést is be tudsz tölteni, csak a felszerelésed jön át.</div>
     <div><b>Zoom:</b> + / − vagy Shift+görgő</div>
     <br>
     <div>A táska teljesen szabad: bármit bárhova rakhatsz. A gyorstár (1-9, 0) tetején lévő táska panelben <b>kattints egy tárgyra, majd egy másik helyre</b> — így cseréled meg őket. Amit épp kiválasztottál a gyorstárban, azzal bányászol / harcolsz / raksz le — csákányt, fejszét vagy kardot csak akkor használsz, ha azt tartod a kezedben!</div>
@@ -265,7 +285,8 @@ const WOOD_PICKAXE=100, COPPER_PICKAXE=101, IRON_PICKAXE=102, GOLD_PICKAXE=103,
       COPPER_HELMET=120, COPPER_CHEST=121, COPPER_LEGS=122,
       IRON_HELMET=123, IRON_CHEST=124, IRON_LEGS=125,
       GOLD_HELMET=126, GOLD_CHEST=127, GOLD_LEGS=128,
-      HEALTH_POTION=129, SUSPICIOUS_EYE=130, NIGHT_CRYSTAL=131, NIGHTBLADE=132;
+      HEALTH_POTION=129, SUSPICIOUS_EYE=130, NIGHT_CRYSTAL=131, NIGHTBLADE=132,
+      NIGHT_HELMET=133, NIGHT_CHEST=134, NIGHT_LEGS=135;
 
 const TILES = {
   [AIR]:    {name:'Levegő', color:null, solid:false},
@@ -335,12 +356,21 @@ const ITEMS = {
   [SUSPICIOUS_EYE]:{name:'Gyanús szem',color:'#e8dede'},
   [NIGHT_CRYSTAL]:{name:'Éjkristály',color:'#7a5ce0'},
   [NIGHTBLADE]:{name:'Éjpenge',color:'#7a5ce0'},
+  [NIGHT_HELMET]:{name:'Éjkristály sisak',color:'#7a5ce0'},
+  [NIGHT_CHEST]:{name:'Éjkristály mellvért',color:'#7a5ce0'},
+  [NIGHT_LEGS]:{name:'Éjkristály lábvért',color:'#7a5ce0'},
 };
 function getDef(id){ return TILES[id] || ITEMS[id]; }
 const doorOpen = new Set();
+// Doors are 2 tiles tall; both halves share one open/closed state, keyed by the
+// bottom tile's coordinates.
+function doorStateKey(tx,ty){
+  if (getTile(tx,ty+1)===DOOR) return tx+','+(ty+1);
+  return tx+','+ty;
+}
 function isSolid(id, tx, ty){
   if (id==null || !TILES[id]) return false;
-  if (id===DOOR && tx!=null && doorOpen.has(tx+','+ty)) return false;
+  if (id===DOOR && tx!=null) return !doorOpen.has(doorStateKey(tx,ty));
   return !!TILES[id].solid;
 }
 
@@ -369,6 +399,7 @@ const ARMOR_INFO = {};
 [[COPPER_HELMET,'helmet',4],[COPPER_CHEST,'chest',6],[COPPER_LEGS,'legs',4],
  [IRON_HELMET,'helmet',7],[IRON_CHEST,'chest',10],[IRON_LEGS,'legs',7],
  [GOLD_HELMET,'helmet',10],[GOLD_CHEST,'chest',14],[GOLD_LEGS,'legs',10],
+ [NIGHT_HELMET,'helmet',15],[NIGHT_CHEST,'chest',21],[NIGHT_LEGS,'legs',15],
 ].forEach(([id,slot,defense])=>{ ARMOR_INFO[id]={slot,defense}; });
 
 const RECIPES = [
@@ -406,6 +437,9 @@ const RECIPES = [
   {id:'door', name:'Ajtó', result:{id:DOOR,qty:1}, cost:[{id:PLANK,qty:6}], station:null},
   {id:'suspicious_eye', name:'Gyanús szem', result:{id:SUSPICIOUS_EYE,qty:1}, cost:[{id:SLIME_GEL,qty:6},{id:GOLD_BAR,qty:2}], station:'table'},
   {id:'nightblade', name:'Éjpenge', result:{id:NIGHTBLADE,qty:1}, cost:[{id:NIGHT_CRYSTAL,qty:8},{id:GOLD_BAR,qty:4}], station:'table'},
+  {id:'night_helmet', name:'Éjkristály sisak', result:{id:NIGHT_HELMET,qty:1}, cost:[{id:NIGHT_CRYSTAL,qty:6}], station:'table'},
+  {id:'night_chest', name:'Éjkristály mellvért', result:{id:NIGHT_CHEST,qty:1}, cost:[{id:NIGHT_CRYSTAL,qty:9}], station:'table'},
+  {id:'night_legs', name:'Éjkristály lábvért', result:{id:NIGHT_LEGS,qty:1}, cost:[{id:NIGHT_CRYSTAL,qty:7}], station:'table'},
 ];
 
 const CONSUMABLE_USE = {};
@@ -963,11 +997,11 @@ const enemies = [];
 const projectiles = [];
 function spawnEnemy(type, x, y){
   const stats = {
-    slime:{w:14,h:14,hp:30,dmg:10,color:'#5fd66a'},
-    zombie:{w:12,h:26,hp:60,dmg:16,color:'#7a9b6e'},
-    bat:{w:12,h:10,hp:15,dmg:6,color:'#4a3b52',flying:true},
-    kingslime:{w:34,h:34,hp:320,dmg:22,color:'#2fae46'},
-    eyeboss:{w:30,h:28,hp:450,dmg:20,color:'#e8dede',flying:true},
+    slime:{w:14,h:14,hp:42,dmg:13,color:'#5fd66a'},
+    zombie:{w:12,h:26,hp:80,dmg:20,color:'#7a9b6e'},
+    bat:{w:12,h:10,hp:22,dmg:9,color:'#4a3b52',flying:true},
+    kingslime:{w:34,h:34,hp:700,dmg:34,color:'#2fae46'},
+    eyeboss:{w:30,h:28,hp:950,dmg:32,color:'#e8dede',flying:true},
   }[type];
   enemies.push({
     type, body:makeBody(x,y,stats.w,stats.h), hp:stats.hp, maxHp:stats.hp, dmg:stats.dmg,
@@ -1172,19 +1206,18 @@ function distToSegment(px,py, x1,y1,x2,y2){
   const cx = x1+t*dx, cy=y1+t*dy;
   return Math.hypot(px-cx, py-cy);
 }
-// A real swinging sword: an arc sweeps from the player's hand for the whole swing
-// duration, hitting every enemy the blade passes through (once each per swing) —
-// not just whatever happened to be under the cursor at the instant of the click.
+// A real swinging sword: sweeps a FULL circle around the player for the whole swing
+// duration, hitting every enemy the blade passes through (once each per swing) no
+// matter which direction they're attacking from — above, below, or the side.
 const swordSwing = {active:false, t:0, dur:0.28, dir:1, tier:0, hitSet:null, handX:0, handY:0, tipX:0, tipY:0};
 function swingArcAngles(){
-  const startA = swordSwing.dir>0 ? -1.35 : Math.PI+1.35;
-  const endA   = swordSwing.dir>0 ?  1.35 : Math.PI-1.35;
-  return [startA, endA];
+  const startA = swordSwing.dir>0 ? -Math.PI*0.6 : Math.PI*0.4;
+  return [startA, startA + Math.PI*2];
 }
 function startSwordSwing(tk){
   swordSwing.active = true;
   swordSwing.t = 0;
-  swordSwing.dur = Math.max(0.16, 0.3 - tk.tier*0.025);
+  swordSwing.dur = Math.max(0.18, 0.32 - tk.tier*0.025);
   swordSwing.dir = player.facing;
   swordSwing.tier = tk.tier;
   swordSwing.hitSet = new Set();
@@ -1194,13 +1227,16 @@ function updateSwordSwing(dt){
   if (!swordSwing.active) return;
   swordSwing.t += dt;
   const pb = player.body;
-  const handX = pb.x+pb.w/2+swordSwing.dir*3, handY = pb.y+13;
+  const handX = pb.x+pb.w/2, handY = pb.y+13;
   const progress = Math.min(1, swordSwing.t/swordSwing.dur);
   const [startA,endA] = swingArcAngles();
   const angle = startA + (endA-startA)*progress;
   const bladeLen = 21+swordSwing.tier*2.5;
   const tipX = handX+Math.cos(angle)*bladeLen, tipY = handY+Math.sin(angle)*bladeLen;
   swordSwing.handX=handX; swordSwing.handY=handY; swordSwing.tipX=tipX; swordSwing.tipY=tipY; swordSwing.angle=angle;
+  if (swordSwing.tier>=5 && Math.random()<0.7){
+    particles.push({x:tipX,y:tipY,vx:(Math.random()-0.5)*15,vy:(Math.random()-0.5)*15,life:0.35,color:'#a97cff',size:2+Math.random()*2,type:'spark'});
+  }
   for (const en of enemies){
     if (en.dead || swordSwing.hitSet.has(en)) continue;
     const ecx=en.body.x+en.body.w/2, ecy=en.body.y+en.body.h/2;
@@ -1239,7 +1275,11 @@ function breakTile(tx,ty,t){
     }
   }
   if (t===TORCH) torchPositions.delete(tx+','+ty);
-  if (t===DOOR) doorOpen.delete(tx+','+ty);
+  if (t===DOOR){
+    doorOpen.delete(doorStateKey(tx,ty));
+    const otherY = (getTile(tx,ty+1)===DOOR) ? ty+1 : (getTile(tx,ty-1)===DOOR) ? ty-1 : null;
+    if (otherY!==null) setTile(tx,otherY,AIR);
+  }
   setTile(tx,ty,AIR);
   if (def && def.drop!=null) addInventory(def.drop,1);
   spawnBreakParticles(tx*TS+TS/2, ty*TS+TS/2, def?(def.color||'#888'):'#888');
@@ -1301,21 +1341,23 @@ function updateMiningAndAttack(dt){
 }
 function tryPlaceOrUse(){
   if (placeCooldown>0 || anyModalOpen()) return;
-  const held = slots[activeSlot];
-  if (!held) return;
-  const item = held.id;
   const {tx,ty,wx,wy} = screenToTile(mouse.x, mouse.y);
   const pcx=player.body.x+player.body.w/2, pcy=player.body.y+player.body.h/2;
   if (Math.hypot(wx-pcx, wy-pcy)>player.reach) return;
   const targetTile = getTile(tx,ty);
+  // Interacting with something already in the world never requires holding an item.
   if (targetTile===CHEST){ openChest(tx,ty); placeCooldown=0.25; return; }
   if (targetTile===DOOR){
-    const key=tx+','+ty;
+    const key = doorStateKey(tx,ty);
     if (doorOpen.has(key)) doorOpen.delete(key); else doorOpen.add(key);
     sfxPlace();
     placeCooldown=0.22;
     return;
   }
+
+  const held = slots[activeSlot];
+  if (!held) return;
+  const item = held.id;
   if (item===SLIME_HORN){
     consumeFromSlot(activeSlot,1); spawnKingSlime(); placeCooldown=1; return;
   }
@@ -1328,6 +1370,25 @@ function tryPlaceOrUse(){
   if (TOOL_KIND[item]) return; // tools aren't placed — select them to mine/fight with them
   if (ARMOR_INFO[item]) return; // armor is equipped in the backpack panel, not placed
   if (!TILES[item]) return; // not a placeable block
+
+  if (item===DOOR){
+    // Doors are 2 tiles tall, same as the player — placed with the clicked tile as
+    // the bottom half.
+    if (getTile(tx,ty)!==AIR || getTile(tx,ty-1)!==AIR) return;
+    const box={x:tx*TS,y:(ty-1)*TS,w:TS,h:TS*2};
+    const overlapsPlayer = !(box.x+box.w<player.body.x||box.x>player.body.x+player.body.w||box.y+box.h<player.body.y||box.y>player.body.y+player.body.h);
+    if (overlapsPlayer) return;
+    const hasSupport = isSolid(getTile(tx,ty+1),tx,ty+1) ||
+      isSolid(getTile(tx-1,ty),tx-1,ty) || isSolid(getTile(tx+1,ty),tx+1,ty) ||
+      isSolid(getTile(tx-1,ty-1),tx-1,ty-1) || isSolid(getTile(tx+1,ty-1),tx+1,ty-1);
+    if (!hasSupport) return;
+    setTile(tx,ty,DOOR); setTile(tx,ty-1,DOOR);
+    consumeFromSlot(activeSlot,1);
+    sfxPlace();
+    placeCooldown=0.18;
+    return;
+  }
+
   if (targetTile!==AIR) return;
   const box={x:tx*TS,y:ty*TS,w:TS,h:TS};
   const overlapsPlayer = !(box.x+box.w<player.body.x||box.x>player.body.x+player.body.w||box.y+box.h<player.body.y||box.y>player.body.y+player.body.h);
@@ -1537,44 +1598,90 @@ function refreshChestPanel(){
 }
 
 /* ============================================================ SAVE / LOAD */
-function saveGame(){
+function downloadJSON(data, filename){
+  const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+function closeSaveMenu(){ document.getElementById('saveMenu').classList.remove('show'); }
+function saveFull(){
   const data = {
-    v:2, seed:SEED, world:Array.from(world),
+    type:'full', v:3, seed:SEED, worldW:W, worldH:H, world:Array.from(world),
     player:{x:player.body.x,y:player.body.y,hp:player.hp,maxHp:player.maxHp},
     slots, activeSlot, cycleT, achieved:Array.from(achieved),
     chest:Array.from(chestStorage.entries()),
     torches:Array.from(torchPositions),
     doors:Array.from(doorOpen),
   };
-  const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='terra_patak_mentes.json'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('💾 Mentve!');
+  downloadJSON(data, 'terra_patak_teljes_mentes.json');
+  showToast('💾 Teljes mentés kész!');
+  closeSaveMenu();
 }
+function saveInventory(){
+  downloadJSON({type:'inventory', v:3, slots, activeSlot}, 'terra_patak_taska.json');
+  showToast('🧳 Táska elmentve!');
+  closeSaveMenu();
+}
+function saveCharacter(){
+  downloadJSON({type:'character', v:3, hp:player.hp, maxHp:player.maxHp, achieved:Array.from(achieved)}, 'terra_patak_karakter.json');
+  showToast('🪪 Karakter elmentve!');
+  closeSaveMenu();
+}
+// Tolerant loader: works with any of the three save types above, and also with
+// older full-save files even if their map size doesn't match the current world —
+// in that case the map is simply skipped (a fresh world stays) while the
+// character and inventory still come through.
 function loadGameFile(file){
   const reader = new FileReader();
   reader.onload = () => {
     try{
       const data = JSON.parse(reader.result);
-      world.set(data.world);
-      player.body.x = data.player.x; player.body.y = data.player.y;
-      player.hp = data.player.hp; player.maxHp = data.player.maxHp;
-      for (let i=0;i<TOTAL_SLOTS;i++) slots[i] = (data.slots && data.slots[i]) ? data.slots[i] : null;
-      activeSlot = data.activeSlot||0;
-      cycleT = data.cycleT||0;
-      achieved.clear(); (data.achieved||[]).forEach(a=>achieved.add(a));
-      chestStorage.clear(); (data.chest||[]).forEach(([k,v])=>chestStorage.set(k,v));
-      torchPositions.clear(); (data.torches||[]).forEach(t=>torchPositions.add(t));
-      doorOpen.clear(); (data.doors||[]).forEach(t=>doorOpen.add(t));
-      explored.fill(0); mmCtx.clearRect(0,0,W,H);
+      let kind = data.type;
+      if (!kind){
+        if (data.world && data.player && data.slots) kind = 'full';
+        else if (data.slots) kind = 'inventory';
+        else if ((data.player && data.player.hp!=null) || data.hp!=null) kind = 'character';
+        else kind = 'unknown';
+      }
+      if (kind==='full' && Array.isArray(data.world)){
+        if (data.world.length===world.length){
+          world.set(data.world);
+          explored.fill(0); mmCtx.clearRect(0,0,W,H);
+          torchPositions.clear(); (data.torches||[]).forEach(t=>torchPositions.add(t));
+          chestStorage.clear(); (data.chest||[]).forEach(([k,v])=>chestStorage.set(k,v));
+          doorOpen.clear(); (data.doors||[]).forEach(t=>doorOpen.add(t));
+          cycleT = data.cycleT||0;
+          if (data.player){ player.body.x=data.player.x; player.body.y=data.player.y; }
+        } else {
+          showToast('⚠ Régi/eltérő méretű pálya — az új világ marad, a karakter és a táska betöltődik');
+        }
+      }
+      const hpSource = data.player || data;
+      if (hpSource && hpSource.hp!=null){ player.hp=hpSource.hp; player.maxHp=hpSource.maxHp||player.maxHp; }
+      if (data.slots){
+        for (let i=0;i<TOTAL_SLOTS;i++) slots[i] = data.slots[i] || null;
+        activeSlot = data.activeSlot||0;
+      }
+      if (data.achieved){ achieved.clear(); data.achieved.forEach(a=>achieved.add(a)); }
       closeAllPanels();
-      showToast('📂 Betöltve!');
+      const labelMap = {full:'Teljes mentés', inventory:'Táska', character:'Karakter'};
+      showToast('📂 Betöltve: '+(labelMap[kind]||'részleges mentés'));
     }catch(e){ showToast('⚠ Hibás mentés fájl'); }
   };
   reader.readAsText(file);
 }
-document.getElementById('saveBtn').addEventListener('click', saveGame);
+document.getElementById('saveBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('saveMenu').classList.toggle('show');
+});
+document.getElementById('saveFullBtn').addEventListener('click', saveFull);
+document.getElementById('saveInvBtn').addEventListener('click', saveInventory);
+document.getElementById('saveCharBtn').addEventListener('click', saveCharacter);
+document.addEventListener('click', (e)=>{
+  const wrap = document.getElementById('saveMenuWrap');
+  if (wrap && !wrap.contains(e.target)) closeSaveMenu();
+});
 document.getElementById('loadBtn').addEventListener('click', ()=>document.getElementById('loadInput').click());
 document.getElementById('loadInput').addEventListener('change', e=>{ if (e.target.files[0]) loadGameFile(e.target.files[0]); });
 
@@ -1978,13 +2085,18 @@ function render(){
         ctx.fillStyle = 'rgba(58,107,207,0.55)'; ctx.fillRect(sx,sy,TS+1,TS+1);
       } else if (t===DOOR){
         if (depth>0){ ctx.fillStyle=caveBgColor(depth); ctx.fillRect(sx,sy,TS+1,TS+1); }
-        const open = doorOpen.has(tx+','+ty);
+        const isBottom = getTile(tx,ty+1)!==DOOR;
+        const key = isBottom ? (tx+','+ty) : (tx+','+(ty+1));
+        const open = doorOpen.has(key);
         if (open){
-          ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+1,sy,3,TS);
+          ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+1,sy,3,TS+1);
         } else {
-          ctx.fillStyle='#8a5a2b'; ctx.fillRect(sx+2,sy,TS-4,TS);
-          ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+2,sy,TS-4,2); ctx.fillRect(sx+2,sy+TS-2,TS-4,2);
-          ctx.fillStyle='#e0c080'; ctx.fillRect(sx+TS-6,sy+TS/2-1,2,2);
+          ctx.fillStyle='#8a5a2b'; ctx.fillRect(sx+2,sy,TS-4,TS+1);
+          if (!isBottom){ ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+2,sy,TS-4,2); }
+          if (isBottom){
+            ctx.fillStyle='#5a3d22'; ctx.fillRect(sx+2,sy+TS-2,TS-4,2);
+            ctx.fillStyle='#e0c080'; ctx.fillRect(sx+TS-6,sy+TS/2-1,2,2);
+          }
         }
       } else {
         ctx.fillStyle = def.color; ctx.fillRect(sx,sy,TS+1,TS+1);
@@ -2114,14 +2226,23 @@ function render(){
   const walking = pb.grounded && Math.abs(pb.vx)>5;
   const legSwing = walking ? Math.sin(player.walkPhase)*3 : 0;
   const skin = player.invuln>0 ? '#ff9e9e' : '#e0a83c';
-  ctx.fillStyle = '#4a3626';
+  const legsArmor = slots[EQUIP_LEGS], chestArmor = slots[EQUIP_CHEST], helmetArmor = slots[EQUIP_HELMET];
+  const legColor = legsArmor ? getDef(legsArmor.id).color : '#4a3626';
+  ctx.fillStyle = legColor;
   ctx.fillRect(psx+1, psy+19+Math.max(0,legSwing), 4, 6-Math.max(0,legSwing));
   ctx.fillRect(psx+pb.w-5, psy+19+Math.max(0,-legSwing), 4, 6-Math.max(0,-legSwing));
   ctx.fillStyle = skin;
   ctx.fillRect(psx, psy+7, pb.w, 13);
   ctx.fillRect(psx+1, psy, pb.w-2, 8);
-  ctx.fillStyle = '#3a2a17';
+  if (chestArmor){
+    ctx.fillStyle = getDef(chestArmor.id).color;
+    ctx.fillRect(psx, psy+7, pb.w, 9);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(psx, psy+7, pb.w, 2);
+  }
+  ctx.fillStyle = helmetArmor ? getDef(helmetArmor.id).color : '#3a2a17';
   ctx.fillRect(psx, psy, pb.w, 4);
+  if (helmetArmor){ ctx.fillRect(psx, psy, pb.w, 8); ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(psx,psy+6,pb.w,1); }
   ctx.fillStyle = '#2a1d12';
   const eyeX = player.facing>0 ? psx+pb.w-4 : psx+2;
   ctx.fillRect(eyeX, psy+5, 2,2);
@@ -2133,18 +2254,31 @@ function render(){
 
   if (isSwordHeld && swordSwing.active){
     // Real sweeping blade: draws exactly where the hit-detection arc currently is,
-    // with a fading afterimage trail so you can see it connect with an enemy.
+    // with a fading afterimage trail so you can see it connect with an enemy —
+    // sweeps a full circle around the player so overhead/behind attackers are covered too.
     const hx = swordSwing.handX-camera.x, hy = swordSwing.handY-camera.y;
-    const [startA] = swingArcAngles();
     const bladeLen = 21+swordSwing.tier*2.5;
     const bladeColor = toolColors[swordSwing.tier];
+    const isNightblade = swordSwing.tier>=5;
+    const trailSpan = isNightblade ? 3.4 : 1.9;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 3; ctx.lineCap='round';
+    if (isNightblade){
+      ctx.strokeStyle = 'rgba(122,92,224,0.55)'; ctx.lineWidth = 6; ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(hx,hy,bladeLen+3, swordSwing.angle-trailSpan, swordSwing.angle); ctx.stroke();
+    }
+    ctx.strokeStyle = isNightblade ? 'rgba(190,160,255,0.7)' : 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = isNightblade ? 4 : 3; ctx.lineCap='round';
     ctx.beginPath();
-    ctx.arc(hx,hy,bladeLen, Math.min(startA,swordSwing.angle), Math.max(startA,swordSwing.angle));
+    ctx.arc(hx,hy,bladeLen, swordSwing.angle-trailSpan, swordSwing.angle);
     ctx.stroke();
     ctx.translate(hx,hy);
     ctx.rotate(swordSwing.angle);
+    if (isNightblade){
+      const glow = ctx.createRadialGradient(bladeLen*0.5,0,1,bladeLen*0.5,0,bladeLen*0.9);
+      glow.addColorStop(0,'rgba(190,160,255,0.9)'); glow.addColorStop(1,'rgba(122,92,224,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(bladeLen*0.5,0,bladeLen*0.9,0,7); ctx.fill();
+    }
     ctx.fillStyle = bladeColor;
     ctx.beginPath();
     ctx.moveTo(2,0); ctx.lineTo(bladeLen-5,-3.2); ctx.lineTo(bladeLen,0); ctx.lineTo(bladeLen-5,3.2);
